@@ -1,0 +1,15 @@
+# Environment variables and secrets
+.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Git
+.git/
+
+# Test and cache files
+.pytest_cache/

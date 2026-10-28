@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FestPass Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 650px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        input, button {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        li { margin: 10px 0; }
+        #status { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>FestPass Registration</h1>
+    <p>Docker deployment assessment</p>
+    <p id="status">Loading...</p>
+
+    <h2>Register for an Event</h2>
+    <form id="registrationForm">
+        <label for="name">Name</label>
+        <input id="name" name="name" required>
+
+        <label for="event">Event</label>
+        <input id="event" name="event" required>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <h2>Registrations</h2>
+    <ul id="registrations"></ul>
+
+    <script>
+        const statusElement = document.getElementById("status");
+        const registrationsElement = document.getElementById("registrations");
+        const form = document.getElementById("registrationForm");
+
+        async function loadHealth() {
+            try {
+                const response = await fetch("/api/health");
+                const data = await response.json();
+
+                if (!response.ok) throw new Error("Health check failed");
+
+                statusElement.textContent =
+                    `Service: ${data.service} | Version: ${data.version} | REGNO: ${data.regno} | Database: ${data.database}`;
+            } catch (error) {
+                statusElement.textContent = "Unable to connect to backend.";
+            }
+        }
+
+        async function loadRegistrations() {
+            try {
+                const response = await fetch("/api/registrations");
+                if (!response.ok) throw new Error("Could not load registrations");
+
+                const registrations = await response.json();
+                registrationsElement.replaceChildren();
+
+                registrations.forEach(registration => {
+                    const item = document.createElement("li");
+                    item.textContent =
+                        `${registration.name} — ${registration.event}`;
+                    registrationsElement.appendChild(item);
+                });
+            } catch (error) {
+                registrationsElement.textContent =
+                    "Unable to load registrations.";
+            }
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const payload = {
+                name: document.getElementById("name").value.trim(),
+                event: document.getElementById("event").value.trim()
+            };
+
+            try {
+                const response = await fetch("/api/registrations", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Registration failed");
+                }
+
+                form.reset();
+                await loadRegistrations();
+                statusElement.textContent =
+                    `Registration successful! REGNO: 202401100100057`;
+            } catch (error) {
+                statusElement.textContent = error.message;
+            }
+        });
+
+        loadHealth();
+        loadRegistrations();
+    </script>
+</body>
+</html>
